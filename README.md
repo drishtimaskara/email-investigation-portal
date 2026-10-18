@@ -35,7 +35,7 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 - Track which group accesses each hint.
 - Limit each mail/group to a maximum of five hints, according to the agreed project rules.
 
-### E. Administration and Tracking
+### D. Administration and Tracking
 - Record hint-access activity.
 - Enforce the hint limit on the backend.
 - Provide appropriate administrative access to relevant tracking information.
