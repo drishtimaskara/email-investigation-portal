@@ -48,7 +48,7 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 
  Member 3  Hints interface and hint detail pages
 
- Member 4 google auth authentication
+ Member 4 google authentication
 
  Member 5 PostgreSQL database and hint tracking
 
