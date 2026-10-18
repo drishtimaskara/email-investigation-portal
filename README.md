@@ -52,8 +52,6 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 
  Member 5 PostgreSQL database and hint tracking
 
- Member 6 Integration, testing, coordination and deployment
-
 ## 5. Initial Project Structure
 
 The agreed structure will be:
