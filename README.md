@@ -42,12 +42,17 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 
 ## 4. Team Responsibilities
 
-| Member 1 | Mailbox interface and folders |
-| Member 2 | Email detail pages and evidence presentation |
-| Member 3 | Hints interface and hint detail pages |
-| Member 4 | Phone-number authentication and OTP |
-| Member 5 | PostgreSQL database and hint tracking |
-| Member 6 | Integration, testing, coordination and deployment |
+ Member 1 Mailbox interface and folders 
+
+ Member 2 Email detail pages and evidence presentation
+
+ Member 3  Hints interface and hint detail pages
+
+ Member 4 google auth authentication
+
+ Member 5 PostgreSQL database and hint tracking
+
+ Member 6 Integration, testing, coordination and deployment
 
 ## 5. Initial Project Structure
 
