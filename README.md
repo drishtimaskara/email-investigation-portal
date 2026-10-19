@@ -46,7 +46,7 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 
  SHIVANI :- Email detail pages and evidence presentation
 
- Member 3  Hints interface and hint detail pages
+ LAKSHMI :-  Hints interface and hint detail pages
 
  Member 4 google authentication
 
