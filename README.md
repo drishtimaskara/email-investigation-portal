@@ -42,15 +42,15 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 
 ## 4. Team Responsibilities
 
- Member 1 Mailbox interface and folders 
+ YASHIKA :- Mailbox interface and folders 
 
- Member 2 Email detail pages and evidence presentation
+ SHIVANI :- Email detail pages and evidence presentation
 
  Member 3  Hints interface and hint detail pages
 
  Member 4 google authentication
 
- Member 5 PostgreSQL database and hint tracking
+ KRISHNA :- PostgreSQL database and hint tracking
 
 ## 5. Initial Project Structure
 
