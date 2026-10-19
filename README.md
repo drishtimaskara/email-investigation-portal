@@ -18,7 +18,7 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 ## 3. Core Features
 
 ### A. Authentication
-- Login using google auth.
+- Login using OTP received on phone number.
 - Associate each investigation group with its designated bits mail.
 - Track hint access for each group.
 
@@ -48,7 +48,7 @@ Players will investigate a fictional case by exploring emails, documents, eviden
 
  LAKSHMI :-  Hints interface and hint detail pages
 
- Member 4 google authentication
+ Member 4 OTP verification on phone number
 
  KRISHNA :- PostgreSQL database and hint tracking
 
