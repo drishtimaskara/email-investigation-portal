@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Open Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Colours estimated from the design screenshot. Change them here only. */
+  --color-surface: #f6f8fc;
+  --color-brand-50: #eef3ff;
+  --color-brand-100: #e1e9fd;
+  --color-brand-600: #2f5be0;
+  --color-brand-700: #2449c2;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .icon-btn {
+    @apply grid size-9 shrink-0 place-items-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-600;
+  }
+}
