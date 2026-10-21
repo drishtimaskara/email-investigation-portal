@@ -21,6 +21,8 @@ const PATHS = {
   cloud: 'M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z',
   chevronLeft: 'M15 18l-6-6 6-6',
   chevronRight: 'M9 18l6-6-6-6',
+  arrowLeft: 'M19 12H5M12 19l-7-7 7-7',
+  paperclip: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 }
 
 export default function Icon({ name, className = 'size-5', filled = false }) {

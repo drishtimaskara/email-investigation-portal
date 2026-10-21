@@ -1,13 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import Icon from './Icons'
 
-const LABELS = [
-  { name: 'Work', color: 'text-sky-500' },
-  { name: 'Personal', color: 'text-emerald-500' },
-  { name: 'Urgent', color: 'text-red-500' },
-  { name: 'Billing', color: 'text-blue-600' },
-]
-
 const linkClass = ({ isActive }) =>
   `flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
     isActive ? 'bg-brand-100 font-medium text-brand-700' : 'text-slate-600 hover:bg-slate-100'
@@ -49,16 +42,6 @@ export default function Sidebar({ open, emails, onCompose }) {
             </NavLink>
           ))}
         </nav>
-
-        <div className="mt-6 flex flex-col gap-0.5">
-          <p className="px-3 pb-1 text-xs font-medium text-slate-500">Labels</p>
-          {LABELS.map((label) => (
-            <NavLink key={label.name} to={`/label/${label.name.toLowerCase()}`} className={linkClass}>
-              <Icon name="tag" className={`size-4 ${label.color}`} />
-              {label.name}
-            </NavLink>
-          ))}
-        </div>
 
         <div className="mt-auto rounded-xl border border-slate-200 bg-white p-3">
           <div className="flex items-center justify-between text-xs">

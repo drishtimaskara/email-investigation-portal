@@ -1,20 +1,10 @@
 import { useState } from 'react'
 import { Link, useOutletContext, useParams } from 'react-router-dom'
 import Icon from './Icons'
+import { formatListDate } from '../utils/dates'
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 25
 const FOLDERS = ['inbox', 'starred', 'sent', 'drafts', 'trash']
-
-function formatDate(iso) {
-  const d = new Date(iso)
-  const now = new Date()
-  if (d.toDateString() === now.toDateString()) {
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  }
-  const opts = { month: 'short', day: 'numeric' }
-  if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric'
-  return d.toLocaleDateString('en-US', opts)
-}
 
 // Remount the list whenever the folder changes, so page and selection reset.
 export default function EmailList() {
@@ -40,9 +30,10 @@ function EmailListView({ folder }) {
   }
 
   const q = query.trim().toLowerCase()
-  const matches = q
+  const found = q
     ? inScope.filter((e) => [e.subject, e.senderName, e.senderEmail, e.body].some((f) => f.toLowerCase().includes(q)))
     : inScope
+  const matches = [...found].sort((a, b) => new Date(b.date) - new Date(a.date)) // newest first
 
   const pageCount = Math.max(1, Math.ceil(matches.length / PAGE_SIZE))
   const current = Math.min(page, pageCount - 1)
@@ -66,7 +57,7 @@ function EmailListView({ folder }) {
     })
 
   const showRecipient = folder === 'sent' || folder === 'drafts'
-
+  
   return (
     <section className="flex flex-col gap-2 pr-3">
       <h1 className="sr-only capitalize">{folder}</h1>
@@ -91,8 +82,18 @@ function EmailListView({ folder }) {
         <button type="button" className="icon-btn !size-8" aria-label="Refresh" onClick={() => setPage(0)}>
           <Icon name="refresh" className="size-4" />
         </button>
+        <button type="button" className="icon-btn !size-8" aria-label="Snoozed">
+          <Icon name="clock" className="size-4" />
+        </button>
         <button type="button" className="icon-btn !size-8" aria-label="Delete selected">
           <Icon name="trash" className="size-4" />
+        </button>
+        <button
+          type="button"
+          className="ml-1 flex h-7 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <Icon name="tag" className="size-3.5 text-red-500" />
+          Labels
         </button>
         <button type="button" className="icon-btn !size-8" aria-label="More actions">
           <Icon name="more" className="size-4" />
@@ -135,7 +136,7 @@ function EmailListView({ folder }) {
             <li
               key={e.id}
               className={`group flex items-center rounded-md border border-slate-200 pl-3 transition-colors hover:border-slate-300 hover:shadow-sm ${
-                selected.has(e.id) ? 'bg-brand-50' : 'bg-white'
+                selected.has(e.id) ? 'bg-brand-50' : e.isRead ? 'bg-white' : 'bg-emerald-50/60'
               }`}
             >
               <input
@@ -150,6 +151,9 @@ function EmailListView({ folder }) {
               </button>
 
               <Link to={`/email/${e.id}`} className="flex h-11 min-w-0 flex-1 items-center gap-3 pr-3 text-[13px]">
+                <span className={`size-2 shrink-0 rounded-full ${e.isRead ? '' : 'bg-emerald-500'}`}>
+                  {!e.isRead && <span className="sr-only">Unread</span>}
+                </span>
                 <span className="w-44 shrink-0 truncate font-semibold text-slate-900">
                   {showRecipient ? (
                     <>
@@ -164,7 +168,7 @@ function EmailListView({ folder }) {
                   <span className="font-semibold text-slate-900">{e.subject}</span>
                   <span className="text-slate-400"> - {e.body}</span>
                 </span>
-                <span className="w-14 shrink-0 text-right text-xs text-slate-500">{formatDate(e.date)}</span>
+                <span className="w-14 shrink-0 text-right text-xs text-slate-500">{formatListDate(e.date)}</span>
               </Link>
 
               <button

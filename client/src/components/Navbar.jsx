@@ -35,12 +35,15 @@ export default function Navbar({ query, onQueryChange, onToggleSidebar }) {
 
       <Link
         to="/hints"
-        className="flex h-9 items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-4 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-100"
+        className="flex h-9 items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 text-[12px] font-medium text-brand-700 transition-colors hover:bg-brand-100"
       >
-        <Icon name="bulb" className="size-4" />
+        <Icon name="bulb" className="size-3.5" />
         Hints &amp; Insights
       </Link>
 
+      <button type="button" className="icon-btn" aria-label="Help">
+        <Icon name="help" />
+      </button>
       <button type="button" className="icon-btn" aria-label="Settings">
         <Icon name="settings" />
       </button>

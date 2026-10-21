@@ -1,57 +1,314 @@
-// Placeholder data. Replace with the API response (GET /api/emails) once the
-// Express + PostgreSQL step is done. Field names match the planned `emails` table.
+// Real email content for the ARG. Generated from the team's .txt files; bodies are verbatim.
+// Dates are IST (+05:30). Field names match the planned `emails` table.
+// links: each {{TOKEN}} in a body maps to an entry here. Fill in `url` when the real link exists.
+// attachments: fill in `url` (for example '/files/workstation_archive.zip') once the file is added.
+// Replace this file with the API response (GET /api/emails) in the Express + PostgreSQL step.
 
 export const currentUser = {
   name: 'Navya Mulay',
-  email: 'navya.mulay@mailbox.internal',
+  email: 'navya.mulay@hyderabad.bits-pilani.ac.in',
 }
 
-const ME = currentUser.email
-let nextId = 0
-
-const mail = (folder, senderName, senderEmail, recipient, subject, body, date, tags, status, isStarred = false) => ({
-  id: ++nextId,
-  folder, // 'inbox' | 'sent' | 'drafts' | 'trash'
-  senderName,
-  senderEmail,
-  recipient,
-  subject,
-  body,
-  date, // ISO string
-  tags,
-  status, // 'Opened' | 'Delivered' | 'Read receipt' | null
-  isStarred,
-  links: [],
-  attachments: [], // later: [{ name, type, url }]
-})
-
 export const emails = [
-  // Inbox
-  mail('inbox', 'Priya Nair', 'priya.nair@placeholder.test', ME, 'Updated roadmap slides attached', 'Hi Navya, here are the finalized slides. Placeholder text for the email body.', '2026-10-19T09:05:00', ['Work'], 'Opened'),
-  mail('inbox', 'Billing Desk', 'billing@placeholder.test', ME, 'Confirmation of payment receipt', 'Received with thanks. We have recorded your payment. Placeholder text.', '2026-10-19T07:42:00', ['Billing'], 'Delivered'),
-  mail('inbox', 'Design Guild', 'guild@placeholder.test', ME, 'Feedback on design system tokens', 'Looks great, approved for release. Placeholder text for the email body.', '2026-10-18T16:20:00', ['Work', 'Important'], 'Read receipt', true),
-  mail('inbox', 'Michael Scott', 'michael.scott@placeholder.test', ME, 'Meeting notes from quarterly sync', 'Summarized deliverables are listed below. Placeholder text for the email body.', '2026-10-17T11:10:00', ['Urgent'], 'Opened'),
-  mail('inbox', 'Cloud Support', 'support@placeholder.test', ME, 'Case #849102: Provisioning IOPS upgrade', 'Thank you for confirming the threshold adjustment. Placeholder text.', '2026-10-15T14:00:00', ['Work'], 'Delivered'),
-  mail('inbox', 'Elena Vance', 'elena.vance@placeholder.test', ME, 'Contract amendment & scope document', 'Attached is the countersigned agreement. Placeholder text for the email body.', '2026-10-12T10:30:00', ['Client'], 'Opened', true),
-  mail('inbox', 'Ops Announcements', 'ops@placeholder.test', ME, 'Maintenance window schedule: Sunday 02:00', 'Zero downtime expected on primary clusters. Placeholder text.', '2026-10-10T18:45:00', ['Important'], 'Delivered'),
-  mail('inbox', 'Marcus Vance', 'marcus.vance@placeholder.test', ME, 'Re: Catch-up over coffee next week?', 'Thursday 10:30 at the usual place works for me. Placeholder text.', '2026-10-08T09:15:00', ['Personal'], 'Read receipt'),
-  mail('inbox', 'Prize Centre', 'winner@placeholder.test', ME, 'You have been selected for a reward', 'Claim your reward today. Placeholder text for a spam-style email.', '2026-10-06T13:00:00', ['Spam'], null),
-  mail('inbox', 'Weekly Deals', 'deals@placeholder.test', ME, 'This week only: 40% off everything', 'Do not miss our biggest sale. Placeholder text for a promotional email.', '2026-10-04T08:00:00', ['Promotional'], null),
-
-  // Sent
-  mail('sent', 'Navya Mulay', ME, 'priya.nair@placeholder.test', 'Re: Updated roadmap slides', 'Thanks Priya, I will review them tonight. Placeholder text.', '2026-10-19T09:40:00', ['Work'], 'Read receipt'),
-  mail('sent', 'Navya Mulay', ME, 'billing@placeholder.test', 'Invoice question', 'Could you confirm the billing cycle for this month? Placeholder text.', '2026-10-16T12:25:00', ['Billing'], 'Delivered', true),
-  mail('sent', 'Navya Mulay', ME, 'elena.vance@placeholder.test', 'Signed contract', 'Please find the signed copy attached. Placeholder text.', '2026-10-12T15:05:00', ['Client'], 'Opened'),
-  mail('sent', 'Navya Mulay', ME, 'marcus.vance@placeholder.test', 'Coffee next week?', 'Are you free on Thursday morning? Placeholder text.', '2026-10-07T19:30:00', ['Personal'], 'Opened'),
-  mail('sent', 'Navya Mulay', ME, 'michael.scott@placeholder.test', 'Action items', 'Listing the action items from today. Placeholder text.', '2026-10-05T17:50:00', ['Urgent'], 'Delivered'),
-
-  // Drafts
-  mail('drafts', 'Navya Mulay', ME, 'ops@placeholder.test', 'Question about the maintenance window', 'Draft body, not finished yet. Placeholder text.', '2026-10-18T21:10:00', ['Important'], null),
-  mail('drafts', 'Navya Mulay', ME, 'guild@placeholder.test', 'Follow-up on design tokens', 'Draft body, not finished yet. Placeholder text.', '2026-10-14T10:00:00', ['Work'], null),
-  mail('drafts', 'Navya Mulay', ME, 'marcus.vance@placeholder.test', 'Weekend plans', 'Draft body, not finished yet. Placeholder text.', '2026-10-09T22:35:00', ['Personal'], null),
-
-  // Trash
-  mail('trash', 'Weekly Deals', 'deals@placeholder.test', ME, 'Last chance: free shipping ends today', 'Placeholder text for a promotional email in the trash.', '2026-10-13T08:00:00', ['Promotional'], null),
-  mail('trash', 'Prize Centre', 'winner@placeholder.test', ME, 'Final notice about your reward', 'Placeholder text for a spam email in the trash.', '2026-10-11T08:30:00', ['Spam'], null),
-  mail('trash', 'Cloud Support', 'support@placeholder.test', ME, 'Case #848877 closed', 'Placeholder text for a closed support case.', '2026-10-02T11:00:00', ['Work'], 'Opened'),
+  {
+    "id": 1,
+    "folder": "inbox",
+    "senderName": "ORION Onboarding",
+    "senderEmail": "onboarding@orionresearchlabs.org",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "MIRROR Access Granted",
+    "body": "Hi Navya,\n\nWelcome to the MIRROR project. Your researcher-level access to the MIRROR dashboard has been approved.\n\nDashboard: {{MIRROR_DASHBOARD_URL}}\n\nABOUT MIRROR\nMIRROR is ORION's anonymization layer for campus survey data. Survey responses (1,248 records in the current dataset) are processed so that direct identifiers such as names, emails and roll numbers are removed before the data reaches the research archive. The fields retained for analysis are year, department, hostel, club, project and survey score.\n\nSUGGESTED ROUTINE\n1. Overview: check the dataset count and last sync summary at the start of each week.\n2. Records: sample the table for formatting or quality issues.\n3. Methodology: review whenever the pipeline description changes.\n4. Diagnostics: skim sync events after each batch and log anything unusual in the project tracker.\n\nResearcher accounts are read-only for the anonymized view. Please do not share dashboard credentials. Any need for access beyond your role must be requested through the ORION data governance desk.\n\nWe look forward to your findings.\n\nResearcher Onboarding\nORION Research Systems",
+    "date": "2026-09-02T10:15:00+05:30",
+    "isStarred": true,
+    "isRead": true,
+    "links": [
+      {
+        "token": "{{MIRROR_DASHBOARD_URL}}",
+        "label": "Dashboard",
+        "url": ""
+      }
+    ],
+    "attachments": []
+  },
+  {
+    "id": 2,
+    "folder": "inbox",
+    "senderName": "GitDesk Notifications",
+    "senderEmail": "notifications@gitdesk.io",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Research Repository",
+    "body": "REPOSITORY ACTIVITY: mirror-research\n\n2 new commits were pushed to main by navya-mulay:\n\n  - Add supervisor review comment\n  - Add backup manifest and validation summary\n\nRepository: {{GIT_REPO_URL}}\nClone: git clone {{GIT_REPO_URL}}\n\nYou are receiving this because you own this repository. You can change notification settings from your account page.\n\n-- GitDesk",
+    "date": "2026-10-13T22:41:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [
+      {
+        "token": "{{GIT_REPO_URL}}",
+        "label": "Repository",
+        "url": ""
+      }
+    ],
+    "attachments": []
+  },
+  {
+    "id": 3,
+    "folder": "inbox",
+    "senderName": "Notes",
+    "senderEmail": "noreply@notes.app",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Notes Backup Available",
+    "body": "Hi Navya,\n\nWe noticed a few sync problems on your account today, and some recent changes may not have reached every device.\n\nA local backup of your notes is stored in the app. You can review it any time from the notes list or the Settings screen.\n\nOpen Navya's Notes: {{NOTES_APP_URL}}\n\nIf sync problems continue, check the sync status in Settings. Your notes remain available offline in the meantime.\n\n-- The Navya's Notes team",
+    "date": "2026-10-13T19:48:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [
+      {
+        "token": "{{NOTES_APP_URL}}",
+        "label": "Open Navya's Notes",
+        "url": ""
+      }
+    ],
+    "attachments": []
+  },
+  {
+    "id": 4,
+    "folder": "sent",
+    "senderName": "Navya Mulay",
+    "senderEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "recipient": "MIRROR Project Team",
+    "recipientEmail": "mirror.team@orionresearchlabs.org",
+    "cc": [
+      {
+        "name": "Archisman Joshi",
+        "email": "archisman.joshi@faculty.hyderabad.bits-pilani.ac.in"
+      }
+    ],
+    "subject": "Data Validation Concern",
+    "body": "Hi all,\n\nI have a question about the anonymization validation, and I'd like to raise it as a question rather than a conclusion.\n\nThe dashboard describes the data as anonymized because names, emails and roll numbers are removed. But the records still carry year, department, hostel, club and project together. In my synthetic test set, several combinations of those fields appear only once, so a record with a unique combination could be matched to a person by anyone who already knows that person's attributes. MIR-1042 is one example.\n\nCould someone from the data team explain:\n\n1. Why these quasi-identifiers remain after anonymization?\n2. Whether MIRROR checks for uniqueness across combinations of fields, not just single fields?\n3. Whether the methodology page should describe this limitation?\n\nI'm happy to share the test set and my notes so the check can be repeated independently. I won't make any claims outside this thread until it's been verified.\n\nThanks,\nNavya",
+    "date": "2026-10-13T22:25:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 5,
+    "folder": "inbox",
+    "senderName": "Prof. Archisman Joshi",
+    "senderEmail": "archisman.joshi@faculty.hyderabad.bits-pilani.ac.in",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Supervisor Review Required",
+    "body": "Navya,\n\nI have read your latest MIRROR observations. Let me be direct.\n\nYou are not to make or circulate any claims about ORION, MIRROR or the identifiability of any student, in writing, in a presentation or to the project team, until your findings have been independently verified. Confidence in your own analysis is not verification.\n\nIf this continues before that happens, I will have no choice but to take you off the project. Stop pursuing this line for now. Do not put anything further in writing about it until we have spoken.\n\nReply to confirm you have understood.\n\nProf. Archisman Joshi\nDepartment of Computer Science",
+    "date": "2026-10-13T15:20:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 6,
+    "folder": "inbox",
+    "senderName": "ORION Security Notice",
+    "senderEmail": "no-reply@security.orionresearchlabs.org",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Security Notice",
+    "body": "SECURITY NOTICE - REF SR-0417\n\nUnusual access to restricted MIRROR resources has been associated with your account and devices. Your activity over the last 24 hours is under review.\n\nCease further investigation of MIRROR activity now. Do not copy, move or share any project material. We are aware of what has been opened, and from where.\n\nFailure to comply may result in loss of access, removal from the project and further action.\n\nThis notice was generated by the security review process. Do not reply to this message.",
+    "date": "2026-10-14T02:39:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 7,
+    "folder": "inbox",
+    "senderName": "ORION Communications",
+    "senderEmail": "communications@orionresearchlabs.org",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Research Directory Update",
+    "body": "Hello collaborators,\n\nThe ORION collaborator directory has been refreshed. It now lists each partner, their project affiliations and the shared review handle used for access requests on each project.\n\nDirectory: {{DIRECTORY_URL}}\n\nPlease check your own entry and tell us about any errors by replying to this message.\n\nORION Research Systems - Communications",
+    "date": "2026-10-06T09:30:00+05:30",
+    "isStarred": false,
+    "isRead": false,
+    "links": [
+      {
+        "token": "{{DIRECTORY_URL}}",
+        "label": "Directory",
+        "url": ""
+      }
+    ],
+    "attachments": []
+  },
+  {
+    "id": 8,
+    "folder": "inbox",
+    "senderName": "Kabir Menon",
+    "senderEmail": "kabir.menon@hyderabad.bits-pilani.ac.in",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [
+      {
+        "name": "Ananya Rao",
+        "email": "ananya.rao@hyderabad.bits-pilani.ac.in"
+      }
+    ],
+    "subject": "Club Collaboration Update",
+    "body": "Hi Navya,\n\nQuick update on the ACM-W x CRUx joint project (swap in the real project name before launch):\n\n  - Session outline is finalized; Ananya has the slides for the first half.\n  - We still need a volunteer for registration and one for the demo laptop.\n  - Venue is booked for Friday 16 Oct, 16:30-18:00.\n\nCould you review the agenda and send comments by Wednesday? Your notes from the planning call are in the shared folder.\n\nThanks!\nKabir",
+    "date": "2026-10-09T17:05:00+05:30",
+    "isStarred": false,
+    "isRead": false,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 9,
+    "folder": "inbox",
+    "senderName": "Department Seminar Series",
+    "senderEmail": "cs.seminars@hyderabad.bits-pilani.ac.in",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Seminar Invitation",
+    "body": "You are invited to the next seminar: Compilers and Parallel Hardware, Thursday 22 Oct, 16:00, Seminar Hall 2. Refreshments will be served. RSVP by replying to this message.",
+    "date": "2026-10-08T11:00:00+05:30",
+    "isStarred": false,
+    "isRead": false,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 10,
+    "folder": "inbox",
+    "senderName": "Central Library",
+    "senderEmail": "library@hyderabad.bits-pilani.ac.in",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Library Reminder",
+    "body": "Reminder: 1 item is due on Friday 16 Oct 2026. Renew online from your library account to avoid late fees.",
+    "date": "2026-10-11T08:00:00+05:30",
+    "isStarred": true,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 11,
+    "folder": "inbox",
+    "senderName": "Project Coordination",
+    "senderEmail": "coordination@orionresearchlabs.org",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Minutes - Project Coordination Meeting",
+    "body": "Minutes of the 12 Oct coordination meeting.\n\nAttendees: all project leads.\nItems: status updates from each workstream; documentation review scheduled for next week; reminder to log tasks in the tracker.\nAction items were assigned to owners as listed in the tracker.\nNext meeting: 19 Oct.",
+    "date": "2026-10-12T18:30:00+05:30",
+    "isStarred": true,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 12,
+    "folder": "inbox",
+    "senderName": "Campus Events",
+    "senderEmail": "campus.events@hyderabad.bits-pilani.ac.in",
+    "recipient": "All Students",
+    "recipientEmail": "all.students@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Campus Tech Fest - Registrations Open",
+    "body": "Registrations for the campus tech fest open on Monday 12 Oct. Workshops, a project showcase and a quiz are planned. Details and registration are on the events page.",
+    "date": "2026-10-10T12:00:00+05:30",
+    "isStarred": false,
+    "isRead": false,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 13,
+    "folder": "sent",
+    "senderName": "Navya Mulay",
+    "senderEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "recipient": "ORION Data Audit",
+    "recipientEmail": "data.audit@orionresearchlabs.org",
+    "cc": [
+      {
+        "name": "Archisman Joshi",
+        "email": "archisman.joshi@faculty.hyderabad.bits-pilani.ac.in"
+      }
+    ],
+    "subject": "Unexplained Export",
+    "body": "Hello,\n\nAt 01:45 IST the MIRROR Diagnostics tab logged an export preparation event for the survey dataset. The destination shown was ORION-RELAY. That destination does not appear in the published pipeline diagram, and I did not trigger the event.\n\nI am requesting an audit of this event. Specifically:\n\n1. Who or what initiated the preparation?\n2. What is ORION-RELAY, and who is it for?\n3. Will the export proceed, and has it been authorized?\n\nTo understand what was being prepared, I opened the Records view at 01:47 and checked whether the data matched the anonymized set described in the methodology.\n\nPlease treat this as urgent. I will keep my own notes of what I observe.\n\nThank you,\nNavya Mulay",
+    "date": "2026-10-14T01:56:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 14,
+    "folder": "sent",
+    "senderName": "Navya Mulay",
+    "senderEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "recipient": "Archisman Joshi",
+    "recipientEmail": "archisman.joshi@faculty.hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Independent Verification",
+    "body": "Professor,\n\nThank you. That was a relief to read after your earlier message.\n\nI will keep everything intact and dated, and I will not share anything outside this thread until it has been validated. I've kept my notes, test set and validation summary in version control, with copies kept elsewhere.\n\nFor independent validation, could you suggest someone outside ORION who could repeat the uniqueness check on my synthetic test set?\n\nNavya\n\n> On 2026-10-13 at 18:02, Archisman Joshi wrote:\n> Navya, my earlier note was blunt, and I stand by the substance: no claims\n> until this is verified. But I do not want this dropped. Preserve your\n> evidence exactly as it is, dated and unaltered, and keep it in more than\n> one place. Then have it validated by someone independent of ORION.\n>\n> Be careful about who you discuss this with. I am not comfortable with how\n> little visibility we have into who sees project material.\n>\n> -- Prof. Joshi",
+    "date": "2026-10-13T18:20:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  },
+  {
+    "id": 15,
+    "folder": "drafts",
+    "senderName": "Navya Mulay",
+    "senderEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "recipient": "(not set)",
+    "recipientEmail": "",
+    "cc": [],
+    "subject": "If Something Happens",
+    "body": "If you are reading this, I haven't sent it, which means something went wrong or I ran out of time.\n\nThe evidence is not in one place on purpose, and no single piece is complete:\n\n  - The repository (mirror-research) holds my methodology, tests and a validation report. Check earlier versions and the commit history, not only the latest state.\n  - My notes app has a backup checklist and the version reference for the rest.\n  - An offline archive is attached. The thesis in it is protected; the password hint is in my research notes.\n\nI deleted the obvious thesis copies myself. Please don't read that as hiding something.\n\nCompare the sources against each other before you decide what happened.\n\n-- Navya",
+    "date": "2026-10-14T03:02:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": [
+      {
+        "name": "workstation_archive.zip",
+        "type": "zip",
+        "url": ""
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "folder": "trash",
+    "senderName": "Navya Mulay",
+    "senderEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "recipient": "Navya Mulay",
+    "recipientEmail": "navya.mulay@hyderabad.bits-pilani.ac.in",
+    "cc": [],
+    "subject": "Repository Cleanup",
+    "body": "Cleanup list:\n\n  - Delete Thesis_Final.pdf and the loose thesis copies in Documents and Downloads, so no complete set is sitting on this machine.\n  - Leave the encrypted v2 file and research_notes.txt untouched.\n  - Everything that matters is already saved elsewhere (see the backup checklist).\n  - Then close the repo and stop syncing.",
+    "date": "2026-10-14T02:51:00+05:30",
+    "isStarred": false,
+    "isRead": true,
+    "links": [],
+    "attachments": []
+  }
 ]

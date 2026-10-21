@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Open Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Colours estimated from the design screenshot. Change them here only. */
   --color-surface: #f6f8fc;
   --color-brand-50: #eef3ff;
   --color-brand-100: #e1e9fd;
