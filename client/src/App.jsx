@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Mailbox from './components/Mailbox'
 import EmailList from './components/EmailList'
 import EmailView from './components/EmailView'
+import Hints from './components/Hints'
 
 // Temporary stand-in until the email page and hints page are built.
 function Placeholder({ title }) {
@@ -17,7 +18,7 @@ export default function App() {
     <Routes>
       <Route element={<Mailbox />}>
         <Route index element={<Navigate to="/inbox" replace />} />
-        <Route path="hints" element={<Placeholder title="Hints" />} />
+        <Route path="hints" element={<Hints />} />
         <Route path="email/:id" element={<EmailView />} />
         <Route path=":folder" element={<EmailList />} />
       </Route>
