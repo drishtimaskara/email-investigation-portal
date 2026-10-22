@@ -1,21 +1,40 @@
--- Email Investigation Portal
--- PostgreSQL schema and hint-tracking setup
--- Scope: database tables, hint seed data, indexes, and optional test queries.
--- Note: this script does NOT implement the application/backend five-hint enforcement.
-
 BEGIN;
 
--- 1. Investigation groups
-CREATE TABLE IF NOT EXISTS investigation_groups (
+-- 1. INVESTIGATION GROUPS
+-- Each group can unlock at most 5 distinct hints.
+-- Groups start inactive until 3 valid emails are registered.
+
+CREATE TABLE investigation_groups (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     group_name VARCHAR(100) NOT NULL,
-    bits_email VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- 2. Hint catalogue: 3 hints for each of the 4 modules
-CREATE TABLE IF NOT EXISTS hints (
+
+-- 2. GROUP EMAILS
+-- Exactly 3 valid emails are required to activate a group.
+-- The required text must appear anywhere in each email.
+-- Each email can belong to only one group.
+
+CREATE TABLE group_emails (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    group_id BIGINT NOT NULL
+        REFERENCES investigation_groups(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    CONSTRAINT valid_hyderabad_email
+        CHECK (
+            email = LOWER(BTRIM(email))
+            AND email LIKE '%hyderabad.bits-pilani%'
+            AND email LIKE '%@%'
+        )
+);
+
+
+-- 3. HINT CATALOGUE
+-- Three hints per module.
+
+CREATE TABLE hints (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     module VARCHAR(20) NOT NULL
         CHECK (module IN ('git', 'mirror', 'notes', 'osint')),
@@ -26,8 +45,11 @@ CREATE TABLE IF NOT EXISTS hints (
     UNIQUE (module, hint_number)
 );
 
--- 3. First unlock per group/hint combination
-CREATE TABLE IF NOT EXISTS group_hint_unlocks (
+
+-- 4. UNLOCKED HINTS
+-- One row per group/hint combination.
+
+CREATE TABLE group_hint_unlocks (
     group_id BIGINT NOT NULL
         REFERENCES investigation_groups(id),
     hint_id BIGINT NOT NULL
@@ -36,25 +58,199 @@ CREATE TABLE IF NOT EXISTS group_hint_unlocks (
     PRIMARY KEY (group_id, hint_id)
 );
 
--- 4. One row per access event, including repeated accesses
-CREATE TABLE IF NOT EXISTS hint_access_events (
+
+-- 5. HINT ACCESS EVENTS
+-- Every recorded access gets a separate row.
+-- The composite foreign key requires the hint to be unlocked.
+
+CREATE TABLE hint_access_events (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     group_id BIGINT NOT NULL,
     hint_id BIGINT NOT NULL,
     accessed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
     FOREIGN KEY (group_id, hint_id)
         REFERENCES group_hint_unlocks(group_id, hint_id)
 );
 
--- Indexes to help common lookups
-CREATE INDEX IF NOT EXISTS idx_hint_events_group_time
+
+-- 6. VALIDATE EMAIL COUNT BEFORE ACTIVATING A GROUP
+
+CREATE OR REPLACE FUNCTION validate_group_activation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    email_count INTEGER;
+BEGIN
+    IF NEW.is_active THEN
+        SELECT COUNT(*)
+        INTO email_count
+        FROM group_emails
+        WHERE group_id = NEW.id;
+
+        IF email_count <> 3 THEN
+            RAISE EXCEPTION
+                'A group must have exactly 3 email addresses to activate. Found: %',
+                email_count;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER check_group_activation
+BEFORE INSERT OR UPDATE OF is_active
+ON investigation_groups
+FOR EACH ROW
+EXECUTE FUNCTION validate_group_activation();
+
+
+-- 7. LIMIT EACH GROUP TO THREE EMAIL ADDRESSES
+
+CREATE OR REPLACE FUNCTION enforce_three_group_emails()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    email_count INTEGER;
+    target_group BIGINT;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        target_group := NEW.group_id;
+    ELSE
+        target_group := OLD.group_id;
+    END IF;
+
+    -- Serialize email-count changes for this group.
+    PERFORM 1
+    FROM investigation_groups
+    WHERE id = target_group
+    FOR UPDATE;
+
+    IF TG_OP = 'INSERT' THEN
+        SELECT COUNT(*)
+        INTO email_count
+        FROM group_emails
+        WHERE group_id = NEW.group_id;
+
+        IF email_count >= 3 THEN
+            RAISE EXCEPTION
+                'A group cannot register more than 3 email addresses.';
+        END IF;
+
+        RETURN NEW;
+
+    ELSIF TG_OP = 'DELETE' THEN
+        SELECT COUNT(*)
+        INTO email_count
+        FROM group_emails
+        WHERE group_id = OLD.group_id;
+
+        IF email_count <= 3
+           AND EXISTS (
+               SELECT 1
+               FROM investigation_groups
+               WHERE id = OLD.group_id
+                 AND is_active = TRUE
+           )
+        THEN
+            RAISE EXCEPTION
+                'Deactivate the group before changing its registered emails.';
+        END IF;
+
+        RETURN OLD;
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER limit_group_email_count
+BEFORE INSERT OR DELETE
+ON group_emails
+FOR EACH ROW
+EXECUTE FUNCTION enforce_three_group_emails();
+
+
+-- 8. ENFORCE THE FIVE-DISTINCT-HINT LIMIT
+
+CREATE OR REPLACE FUNCTION enforce_group_hint_limit()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    hint_count INTEGER;
+BEGIN
+    -- Lock the group to avoid simultaneous unlocks bypassing the limit.
+    PERFORM 1
+    FROM investigation_groups
+    WHERE id = NEW.group_id
+      AND is_active = TRUE
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            'Group does not exist or is inactive.';
+    END IF;
+
+    -- Reject inactive hints.
+    PERFORM 1
+    FROM hints
+    WHERE id = NEW.hint_id
+      AND is_active = TRUE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            'Hint does not exist or is inactive.';
+    END IF;
+
+    -- Re-unlocking an existing hint does not use another slot.
+    IF EXISTS (
+        SELECT 1
+        FROM group_hint_unlocks
+        WHERE group_id = NEW.group_id
+          AND hint_id = NEW.hint_id
+    ) THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT COUNT(*)
+    INTO hint_count
+    FROM group_hint_unlocks
+    WHERE group_id = NEW.group_id;
+
+    IF hint_count >= 5 THEN
+        RAISE EXCEPTION
+            'Hint limit reached: a group can unlock only 5 distinct hints.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER check_group_hint_limit
+BEFORE INSERT
+ON group_hint_unlocks
+FOR EACH ROW
+EXECUTE FUNCTION enforce_group_hint_limit();
+
+
+-- 9. INDEXES
+
+CREATE INDEX idx_hint_events_group_time
     ON hint_access_events (group_id, accessed_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_hint_unlocks_hint
+CREATE INDEX idx_hint_unlocks_hint
     ON group_hint_unlocks (hint_id);
 
--- 5. Seed the 12 hints.
--- ON CONFLICT makes this safe to rerun without duplicating module/hint pairs.
+CREATE INDEX idx_group_emails_group
+    ON group_emails (group_id);
+
+
+-- 10. SEED THE 12 HINTS
+
 INSERT INTO hints (module, hint_number, content)
 VALUES
     ('git', 1, 'The current branch is not the whole story.'),
@@ -75,82 +271,3 @@ VALUES
 ON CONFLICT (module, hint_number) DO NOTHING;
 
 COMMIT;
-
-
--- ==========================================================
--- VERIFICATION QUERIES (run separately as needed)
--- ==========================================================
-
--- A. List the tables in the public schema:
--- SELECT table_name
--- FROM information_schema.tables
--- WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
--- ORDER BY table_name;
-
--- B. Verify the 12 hints:
--- SELECT module, hint_number, content, is_active
--- FROM hints
--- ORDER BY module, hint_number;
-
--- C. Count groups, distinct unlock records, and access events:
--- SELECT
---   (SELECT COUNT(*) FROM investigation_groups) AS total_groups,
---   (SELECT COUNT(*) FROM group_hint_unlocks) AS total_unlocks,
---   (SELECT COUNT(*) FROM hint_access_events) AS total_access_events;
-
--- D. OPTIONAL TEST DATA: insert a test group (safe to rerun by email).
--- INSERT INTO investigation_groups (group_name, bits_email)
--- VALUES ('test grp', 'test@gmail.com')
--- ON CONFLICT (bits_email) DO NOTHING;
-
--- E. Find the test group's ID and Git Hint 1's ID:
--- SELECT g.id AS group_id, g.group_name, h.id AS hint_id, h.content
--- FROM investigation_groups g
--- CROSS JOIN hints h
--- WHERE g.group_name = 'test grp'
---   AND g.bits_email = 'test@gmail.com'
---   AND h.module = 'git'
---   AND h.hint_number = 1;
-
--- F. OPTIONAL TEST: record the unlock for Git Hint 1.
--- INSERT INTO group_hint_unlocks (group_id, hint_id)
--- SELECT g.id, h.id
--- FROM investigation_groups g
--- CROSS JOIN hints h
--- WHERE g.group_name = 'test grp'
---   AND g.bits_email = 'test@gmail.com'
---   AND h.module = 'git'
---   AND h.hint_number = 1
--- ON CONFLICT (group_id, hint_id) DO NOTHING;
-
--- G. OPTIONAL TEST: record an access event for an already-unlocked hint.
--- Run this once each time you want to simulate an access.
--- INSERT INTO hint_access_events (group_id, hint_id)
--- SELECT u.group_id, u.hint_id
--- FROM group_hint_unlocks u
--- JOIN investigation_groups g ON g.id = u.group_id
--- JOIN hints h ON h.id = u.hint_id
--- WHERE g.group_name = 'test grp'
---   AND g.bits_email = 'test@gmail.com'
---   AND h.module = 'git'
---   AND h.hint_number = 1;
-
--- H. View the full access log with group/module/hint details:
--- SELECT
---   e.id AS event_id,
---   g.group_name,
---   h.module,
---   h.hint_number,
---   e.accessed_at
--- FROM hint_access_events e
--- JOIN investigation_groups g ON e.group_id = g.id
--- JOIN hints h ON e.hint_id = h.id
--- ORDER BY e.accessed_at DESC;
-
--- IMPORTANT DESIGN NOTES:
--- 1. group_hint_unlocks stores each group/hint pair once.
--- 2. hint_access_events stores every access; repeated accesses get new IDs/timestamps.
--- 3. Five-hint limit must be enforced by backend logic or a carefully designed database
---    mechanism. The schema alone does not enforce that limit.
--- 4. This is the hint-tracking subsystem, not the complete portal schema. Email/evidence
---    metadata and user/authentication tables may still be required by the full project.
