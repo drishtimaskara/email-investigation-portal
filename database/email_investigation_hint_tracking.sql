@@ -1,8 +1,6 @@
+
 BEGIN;
 
--- 1. INVESTIGATION GROUPS
--- Each group can unlock at most 5 distinct hints.
--- Groups start inactive until 3 valid emails are registered.
 
 CREATE TABLE investigation_groups (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -10,71 +8,185 @@ CREATE TABLE investigation_groups (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     is_active BOOLEAN NOT NULL DEFAULT FALSE
 );
-
-
--- 2. GROUP EMAILS
--- Exactly 3 valid emails are required to activate a group.
--- The required text must appear anywhere in each email.
--- Each email can belong to only one group.
-
 CREATE TABLE group_emails (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     group_id BIGINT NOT NULL
-        REFERENCES investigation_groups(id) ON DELETE CASCADE,
+        REFERENCES investigation_groups(id)
+        ON DELETE CASCADE,
+
     email VARCHAR(255) NOT NULL UNIQUE,
-    CONSTRAINT valid_hyderabad_email
-        CHECK (
-            email = LOWER(BTRIM(email))
-            AND email LIKE '%hyderabad.bits-pilani%'
-            AND email LIKE '%@%'
-        )
+
+    CONSTRAINT valid_hyderabad_email CHECK (
+        email = LOWER(BTRIM(email))
+        AND email LIKE '%hyderabad.bits-pilani%'
+        AND email LIKE '%@%'
+    ),
+
+    UNIQUE (group_id, email)
 );
 
+CREATE TABLE team_mailboxes (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
--- 3. HINT CATALOGUE
--- Three hints per module.
+    group_id BIGINT NOT NULL UNIQUE
+        REFERENCES investigation_groups(id)
+        ON DELETE CASCADE,
+
+    mailbox_address VARCHAR(255) NOT NULL UNIQUE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE (group_id, id)
+);
+
+CREATE OR REPLACE FUNCTION create_team_mailbox()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO team_mailboxes (
+        group_id,
+        mailbox_address
+    )
+    VALUES (
+        NEW.id,
+        'team-' || NEW.id || '@hyderabad.bits-pilani.example'
+    );
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER auto_create_team_mailbox
+AFTER INSERT ON investigation_groups
+FOR EACH ROW
+EXECUTE FUNCTION create_team_mailbox();
+
+CREATE TABLE team_users (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    group_id BIGINT NOT NULL,
+
+    email VARCHAR(255) NOT NULL,
+
+    username VARCHAR(100) NOT NULL UNIQUE,
+
+    password_hash TEXT NOT NULL
+        CHECK (LENGTH(password_hash) > 0),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE (email),
+    UNIQUE (group_id, id),
+
+    FOREIGN KEY (group_id, email)
+        REFERENCES group_emails(group_id, email)
+        ON DELETE CASCADE
+);
 
 CREATE TABLE hints (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     module VARCHAR(20) NOT NULL
         CHECK (module IN ('git', 'mirror', 'notes', 'osint')),
+
     hint_number SMALLINT NOT NULL
         CHECK (hint_number BETWEEN 1 AND 3),
+
     content TEXT NOT NULL,
+
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
     UNIQUE (module, hint_number)
 );
 
-
--- 4. UNLOCKED HINTS
--- One row per group/hint combination.
-
 CREATE TABLE group_hint_unlocks (
     group_id BIGINT NOT NULL
-        REFERENCES investigation_groups(id),
+        REFERENCES investigation_groups(id)
+        ON DELETE CASCADE,
+
     hint_id BIGINT NOT NULL
         REFERENCES hints(id),
+
     unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
     PRIMARY KEY (group_id, hint_id)
 );
 
-
--- 5. HINT ACCESS EVENTS
--- Every recorded access gets a separate row.
--- The composite foreign key requires the hint to be unlocked.
-
 CREATE TABLE hint_access_events (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     group_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
     hint_id BIGINT NOT NULL,
+
     accessed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     FOREIGN KEY (group_id, hint_id)
         REFERENCES group_hint_unlocks(group_id, hint_id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (group_id, user_id)
+        REFERENCES team_users(group_id, id)
+        ON DELETE CASCADE
 );
 
+CREATE TABLE mailbox_messages (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
--- 6. VALIDATE EMAIL COUNT BEFORE ACTIVATING A GROUP
+    group_id BIGINT NOT NULL,
+    mailbox_id BIGINT NOT NULL,
+
+    folder VARCHAR(20) NOT NULL DEFAULT 'inbox'
+        CHECK (folder IN ('inbox', 'sent', 'drafts', 'trash')),
+
+    sender TEXT NOT NULL,
+    recipient TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+
+    sent_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    FOREIGN KEY (group_id, mailbox_id)
+        REFERENCES team_mailboxes(group_id, id)
+        ON DELETE CASCADE,
+
+    UNIQUE (group_id, id)
+);
+
+CREATE TABLE mailbox_attachments (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    message_id BIGINT NOT NULL
+        REFERENCES mailbox_messages(id)
+        ON DELETE CASCADE,
+
+    filename VARCHAR(255) NOT NULL,
+    content_type VARCHAR(150),
+    storage_key TEXT NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE mailbox_message_reads (
+    group_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    message_id BIGINT NOT NULL,
+
+    read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (user_id, message_id),
+
+    FOREIGN KEY (group_id, user_id)
+        REFERENCES team_users(group_id, id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (group_id, message_id)
+        REFERENCES mailbox_messages(group_id, id)
+        ON DELETE CASCADE
+);
 
 CREATE OR REPLACE FUNCTION validate_group_activation()
 RETURNS TRIGGER
@@ -106,9 +218,6 @@ ON investigation_groups
 FOR EACH ROW
 EXECUTE FUNCTION validate_group_activation();
 
-
--- 7. LIMIT EACH GROUP TO THREE EMAIL ADDRESSES
-
 CREATE OR REPLACE FUNCTION enforce_three_group_emails()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -117,19 +226,32 @@ DECLARE
     email_count INTEGER;
     target_group BIGINT;
 BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        RAISE EXCEPTION
+            'Email records cannot be updated. Deactivate the group and replace the email explicitly.';
+    END IF;
+
     IF TG_OP = 'INSERT' THEN
         target_group := NEW.group_id;
     ELSE
         target_group := OLD.group_id;
     END IF;
 
-    -- Serialize email-count changes for this group.
     PERFORM 1
     FROM investigation_groups
     WHERE id = target_group
     FOR UPDATE;
 
+    IF NOT FOUND THEN
+        IF TG_OP = 'DELETE' THEN
+            RETURN OLD;
+        END IF;
+
+        RAISE EXCEPTION 'Investigation group does not exist.';
+    END IF;
+
     IF TG_OP = 'INSERT' THEN
+
         SELECT COUNT(*)
         INTO email_count
         FROM group_emails
@@ -140,9 +262,20 @@ BEGIN
                 'A group cannot register more than 3 email addresses.';
         END IF;
 
+        IF EXISTS (
+            SELECT 1
+            FROM investigation_groups
+            WHERE id = NEW.group_id
+              AND is_active = TRUE
+        ) THEN
+            RAISE EXCEPTION
+                'Deactivate the group before changing registered emails.';
+        END IF;
+
         RETURN NEW;
 
     ELSIF TG_OP = 'DELETE' THEN
+
         SELECT COUNT(*)
         INTO email_count
         FROM group_emails
@@ -168,13 +301,67 @@ END;
 $$;
 
 CREATE TRIGGER limit_group_email_count
-BEFORE INSERT OR DELETE
+BEFORE INSERT OR UPDATE OR DELETE
 ON group_emails
 FOR EACH ROW
 EXECUTE FUNCTION enforce_three_group_emails();
 
 
--- 8. ENFORCE THE FIVE-DISTINCT-HINT LIMIT
+-- =========================================================
+-- 13. ENFORCE THREE LOGIN ACCOUNTS PER GROUP
+-- Every login must correspond to a registered email.
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION enforce_team_user_limit()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    user_count INTEGER;
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        RAISE EXCEPTION
+            'Login identity fields cannot be updated through this operation.';
+    END IF;
+
+    PERFORM 1
+    FROM investigation_groups
+    WHERE id = NEW.group_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Investigation group does not exist.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM investigation_groups
+        WHERE id = NEW.group_id
+          AND is_active = TRUE
+    ) THEN
+        RAISE EXCEPTION
+            'The group must be active before creating login accounts.';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO user_count
+    FROM team_users
+    WHERE group_id = NEW.group_id;
+
+    IF user_count >= 3 THEN
+        RAISE EXCEPTION
+            'A group can have only 3 login accounts.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER limit_team_user_count
+BEFORE INSERT OR UPDATE
+ON team_users
+FOR EACH ROW
+EXECUTE FUNCTION enforce_team_user_limit();
 
 CREATE OR REPLACE FUNCTION enforce_group_hint_limit()
 RETURNS TRIGGER
@@ -183,7 +370,6 @@ AS $$
 DECLARE
     hint_count INTEGER;
 BEGIN
-    -- Lock the group to avoid simultaneous unlocks bypassing the limit.
     PERFORM 1
     FROM investigation_groups
     WHERE id = NEW.group_id
@@ -195,7 +381,6 @@ BEGIN
             'Group does not exist or is inactive.';
     END IF;
 
-    -- Reject inactive hints.
     PERFORM 1
     FROM hints
     WHERE id = NEW.hint_id
@@ -206,7 +391,6 @@ BEGIN
             'Hint does not exist or is inactive.';
     END IF;
 
-    -- Re-unlocking an existing hint does not use another slot.
     IF EXISTS (
         SELECT 1
         FROM group_hint_unlocks
@@ -237,10 +421,12 @@ FOR EACH ROW
 EXECUTE FUNCTION enforce_group_hint_limit();
 
 
--- 9. INDEXES
 
 CREATE INDEX idx_hint_events_group_time
     ON hint_access_events (group_id, accessed_at DESC);
+
+CREATE INDEX idx_hint_events_user_time
+    ON hint_access_events (user_id, accessed_at DESC);
 
 CREATE INDEX idx_hint_unlocks_hint
     ON group_hint_unlocks (hint_id);
@@ -248,8 +434,18 @@ CREATE INDEX idx_hint_unlocks_hint
 CREATE INDEX idx_group_emails_group
     ON group_emails (group_id);
 
+CREATE INDEX idx_team_users_group
+    ON team_users (group_id);
 
--- 10. SEED THE 12 HINTS
+CREATE INDEX idx_mailbox_messages_folder
+    ON mailbox_messages (mailbox_id, folder, created_at DESC);
+
+CREATE INDEX idx_mailbox_attachments_message
+    ON mailbox_attachments (message_id);
+
+CREATE INDEX idx_mailbox_reads_message
+    ON mailbox_message_reads (message_id);
+
 
 INSERT INTO hints (module, hint_number, content)
 VALUES
