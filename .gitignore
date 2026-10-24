@@ -1,0 +1,4 @@
+database/mailbox/
+server/.env
+server/files/
+node_modules/
