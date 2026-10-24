@@ -1,0 +1,11 @@
+{
+  "name": "email-investigation-portal",
+  "version": "1.0.0",
+  "description": "Mailbox-style investigation portal for an Alternate Reality Game (ARG).",
+  "scripts": {
+    "server": "npm --prefix server start",
+    "client": "npm --prefix client dev",
+    "build": "npm --prefix client run build",
+    "lint": "npm --prefix client run lint"
+  }
+}

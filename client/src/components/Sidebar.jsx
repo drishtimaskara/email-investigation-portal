@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import Icon from './Icons'
+import { useAuth } from '../auth/useAuth'
 
 const linkClass = ({ isActive }) =>
   `flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
@@ -7,6 +8,7 @@ const linkClass = ({ isActive }) =>
   }`
 
 export default function Sidebar({ open, emails, onCompose }) {
+  const { user } = useAuth()
   const count = (folder) => emails.filter((e) => e.folder === folder).length
 
   const items = [
@@ -17,6 +19,10 @@ export default function Sidebar({ open, emails, onCompose }) {
     { to: '/trash', label: 'Trash', icon: 'trash' },
     { to: '/hints', label: 'Hints & Insights', icon: 'bulb' },
   ]
+
+  if (user?.role === 'admin') {
+    items.push({ to: '/admin', label: 'Admin Panel', icon: 'settings' })
+  }
 
   return (
     <aside
