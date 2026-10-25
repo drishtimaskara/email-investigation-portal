@@ -3,12 +3,16 @@ const path = require("path");
 const { pathToFileURL } = require("url");
 const express = require("express");
 const cors = require("cors");
+<<<<<<< HEAD
 const jwt = require("jsonwebtoken");
 const { db, hashPassword, verifyPassword } = require("./db");
 
 const JWT_SECRET = process.env.JWT_SECRET || "arg-investigation-portal-secret-key-2026";
 const MAX_HINTS_PER_USER = 5;
 const EMAILS_FILE = path.resolve(__dirname, "..", "client", "src", "data", "emails.js");
+=======
+const { emailDb, hintDb } = require("./db");
+>>>>>>> 09141e9 (DB updated to include hints table)
 
 const app = express();
 app.use(cors());
@@ -87,6 +91,7 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
 
+<<<<<<< HEAD
 // --- Auth Routes ---
 
 // Login
@@ -132,13 +137,29 @@ app.get("/api/auth/me", authMiddleware, (req, res) => {
 
 // Returns protagonist Navya Mulay's emails from emails.js (optionally filtered by ?folder=...)
 app.get("/api/emails", authMiddleware, async (req, res, next) => {
+=======
+// ============================================================
+// EMAIL PORTAL ROUTES (queries email_portal DB)
+// ============================================================
+
+// All emails, newest first. Optional: /api/emails?folder=inbox
+app.get("/api/emails", async (req, res, next) => {
+>>>>>>> 09141e9 (DB updated to include hints table)
   try {
     const list = await getEmails();
     if (req.query.folder) {
       const folder = req.query.folder.toLowerCase();
       return res.json(list.filter((e) => e.folder === folder));
     }
+<<<<<<< HEAD
     res.json(list);
+=======
+    const { rows } = await emailDb.query(
+      `${EMAIL_QUERY} ${where} GROUP BY e.id ORDER BY e.sent_at DESC`,
+      params
+    );
+    res.json(rows.map(toEmail));
+>>>>>>> 09141e9 (DB updated to include hints table)
   } catch (err) {
     next(err);
   }
@@ -147,15 +168,28 @@ app.get("/api/emails", authMiddleware, async (req, res, next) => {
 // One email by its number, e.g. /api/emails/1
 app.get("/api/emails/:id", authMiddleware, async (req, res, next) => {
   try {
+<<<<<<< HEAD
     const list = await getEmails();
     const found = list.find((e) => String(e.id) === String(req.params.id));
     if (!found) return res.status(404).json({ error: "Email not found" });
     res.json(found);
+=======
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid email id" });
+
+    const { rows } = await emailDb.query(
+      `${EMAIL_QUERY} WHERE e.mail_no = $1 GROUP BY e.id`,
+      [id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: "Email not found" });
+    res.json(toEmail(rows[0]));
+>>>>>>> 09141e9 (DB updated to include hints table)
   } catch (err) {
     next(err);
   }
 });
 
+<<<<<<< HEAD
 // --- Hints Routes ---
 
 const MODULE_NAMES = ["Git", "MIRROR", "Notes", "OSINT"];
@@ -196,11 +230,41 @@ app.get("/api/hints", authMiddleware, (req, res, next) => {
       maxHints: MAX_HINTS_PER_USER,
       modules,
     });
+=======
+// ============================================================
+// HINT TRACKING ROUTES (queries hint_tracking DB)
+// ============================================================
+
+// GET hints grouped by module for team (masks content until unlocked)
+app.get("/api/hints", async (req, res, next) => {
+  try {
+    const teamId = req.query.team_id || 1;
+
+    const query = `
+      SELECT 
+        h.id, 
+        h.module, 
+        h.hint_number, 
+        CASE WHEN thu.id IS NOT NULL THEN h.content ELSE NULL END AS content,
+        (thu.id IS NOT NULL) AS is_unlocked
+      FROM hints h
+      LEFT JOIN team_hint_unlocks thu 
+        ON h.id = thu.hint_id AND thu.team_id = $1
+      ORDER BY h.module, h.hint_number ASC
+    `;
+
+    const { rows } = await hintDb.query(query, [teamId]);
+    const teamRes = await hintDb.query("SELECT total_hints_used FROM teams WHERE id = $1", [teamId]);
+    const totalUsed = teamRes.rows[0] ? teamRes.rows[0].total_hints_used : 0;
+
+    res.json({ hints: rows, total_hints_used: totalUsed });
+>>>>>>> 09141e9 (DB updated to include hints table)
   } catch (err) {
     next(err);
   }
 });
 
+<<<<<<< HEAD
 // Unlock next hint for module
 app.post("/api/hints/unlock", authMiddleware, (req, res, next) => {
   try {
@@ -259,11 +323,40 @@ app.post("/api/hints/unlock", authMiddleware, (req, res, next) => {
       totalUnlocked: totalUnlockedCount + 1,
       maxHints: MAX_HINTS_PER_USER,
     });
+=======
+// POST unlock a specific hint for the team (increments shared team total, no cap)
+app.post("/api/hints/:id/unlock", async (req, res, next) => {
+  try {
+    const hintId = Number(req.params.id);
+    const teamId = req.body.team_id || 1;
+
+    // Check if already unlocked
+    const checkUnlock = await hintDb.query(
+      "SELECT id FROM team_hint_unlocks WHERE team_id = $1 AND hint_id = $2",
+      [teamId, hintId]
+    );
+
+    if (checkUnlock.rows.length === 0) {
+      await hintDb.query(
+        "INSERT INTO team_hint_unlocks (team_id, hint_id) VALUES ($1, $2)",
+        [teamId, hintId]
+      );
+
+      await hintDb.query(
+        "UPDATE teams SET total_hints_used = total_hints_used + 1 WHERE id = $1",
+        [teamId]
+      );
+    }
+
+    const { rows } = await hintDb.query("SELECT * FROM hints WHERE id = $1", [hintId]);
+    res.json(rows[0]);
+>>>>>>> 09141e9 (DB updated to include hints table)
   } catch (err) {
     next(err);
   }
 });
 
+<<<<<<< HEAD
 // --- Admin Routes ---
 
 // List all users and their hint stats
@@ -393,6 +486,9 @@ app.get("/api/admin/stats", authMiddleware, adminMiddleware, (req, res, next) =>
 });
 
 // Error handling middleware
+=======
+// Logs the real error, but only tells the browser something went wrong.
+>>>>>>> 09141e9 (DB updated to include hints table)
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
   res.status(500).json({ error: "Internal server error" });

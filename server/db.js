@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const path = require("path");
 const fs = require("fs");
 const Database = require("better-sqlite3");
@@ -121,3 +122,19 @@ module.exports = {
   hashPassword,
   verifyPassword,
 };
+=======
+require("dotenv").config();
+const { Pool } = require("pg");
+
+// Connection to email_portal DB
+const emailDb = new Pool({ 
+  connectionString: process.env.EMAIL_DB_URL || process.env.DATABASE_URL 
+});
+
+// Connection to hint_tracking DB
+const hintDb = new Pool({ 
+  connectionString: process.env.HINT_DB_URL || process.env.DATABASE_URL 
+});
+
+module.exports = { emailDb, hintDb };
+>>>>>>> 09141e9 (DB updated to include hints table)
