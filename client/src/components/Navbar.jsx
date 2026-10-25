@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom'
 import Icon from './Icons'
 import { useAuth } from '../auth/useAuth'
+import { currentUser } from '../data/emails'
 
-const protagonist = {
-  name: 'Navya Mulay',
-  email: 'navya.mulay@campus.example',
-}
-
-const initials = 'NM'
+const initials = (currentUser.name || 'NM')
+  .split(' ')
+  .map((p) => p[0])
+  .join('')
 
 export default function Navbar({ query, onQueryChange, onToggleSidebar }) {
   const { user, logout } = useAuth()
@@ -77,12 +76,12 @@ export default function Navbar({ query, onQueryChange, onToggleSidebar }) {
         </span>
         <div className="leading-tight text-left hidden md:block">
           <div className="flex items-center gap-1.5">
-            <p className="text-[12px] font-semibold text-slate-900">{protagonist.name}</p>
+            <p className="text-[12px] font-semibold text-slate-900">{currentUser.name}</p>
             <span className="rounded bg-rose-100 px-1 py-0.2 text-[9px] font-medium text-rose-800">
               Subject
             </span>
           </div>
-          <p className="text-[10px] text-slate-500">{protagonist.email}</p>
+          <p className="text-[10px] text-slate-500">{currentUser.email}</p>
         </div>
       </div>
 

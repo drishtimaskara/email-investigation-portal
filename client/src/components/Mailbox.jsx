@@ -3,9 +3,10 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import { useAuth } from '../auth/useAuth'
+import { emails as initialEmails } from '../data/emails'
 
 // Layout shell shared by every page: navbar + side panel + the routed page.
-// Emails are loaded from server (GET /api/emails) for protagonist Navya Mulay.
+// Emails are loaded from data/emails.js and refreshed from the server.
 export default function Mailbox() {
   const { user, token, loading: authLoading, authFetch } = useAuth()
   const location = useLocation()
@@ -13,8 +14,8 @@ export default function Mailbox() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [query, setQuery] = useState('')
   const [toast, setToast] = useState('')
-  const [emails, setEmails] = useState([])
-  const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
+  const [emails, setEmails] = useState(initialEmails)
+  const [status, setStatus] = useState('ready') // 'loading' | 'ready' | 'error'
   const timer = useRef(null)
 
   const showToast = (message) => {
@@ -34,14 +35,14 @@ export default function Mailbox() {
         return res.json()
       })
       .then((data) => {
-        if (!cancelled) {
+        if (!cancelled && Array.isArray(data)) {
           setEmails(data)
           setStatus('ready')
         }
       })
       .catch((err) => {
-        console.error('Could not load emails:', err)
-        if (!cancelled) setStatus('error')
+        console.error('Could not refresh emails from server:', err)
+        // Even if server refresh fails, localEmails are already displayed.
       })
     return () => {
       cancelled = true

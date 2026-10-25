@@ -1,4 +1,6 @@
 require("dotenv").config();
+const path = require("path");
+const { pathToFileURL } = require("url");
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -6,12 +8,13 @@ const { db, hashPassword, verifyPassword } = require("./db");
 
 const JWT_SECRET = process.env.JWT_SECRET || "arg-investigation-portal-secret-key-2026";
 const MAX_HINTS_PER_USER = 5;
+const EMAILS_FILE = path.resolve(__dirname, "..", "client", "src", "data", "emails.js");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Text shown for each {{TOKEN}} link. The URL itself comes from .env.
+// Fallback link labels if token label not specified in emails.js
 const LINK_LABELS = {
   MIRROR_DASHBOARD_URL: "Dashboard",
   GIT_REPO_URL: "Repository",
@@ -19,43 +22,30 @@ const LINK_LABELS = {
   DIRECTORY_URL: "Directory",
 };
 
-// Finds every {{TOKEN}} in a body and fills in its URL from .env.
-function linksFor(body) {
-  const names = [...new Set([...(body || "").matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((m) => m[1]))];
-  return names.map((name) => ({
-    token: `{{${name}}}`,
-    label: LINK_LABELS[name] || name,
-    url: process.env[name] || "",
-  }));
-}
+// Dynamically loads the latest emails directly from client/src/data/emails.js.
+// Any edits to emails.js immediately reflect without needing database resets or restarts.
+async function getEmails() {
+  const fileUrl = pathToFileURL(EMAILS_FILE).href + `?t=${Date.now()}`;
+  const mod = await import(fileUrl);
+  const emailsList = mod.emails || [];
 
-// Turns a database row back into the shape the client uses.
-function toEmail(row) {
-  let cc = [];
-  try {
-    cc = JSON.parse(row.cc || "[]");
-  } catch {
-    cc = [];
-  }
+  return emailsList.map((email) => {
+    const links = (email.links || []).map((l) => {
+      const tokenName = l.token.replace(/^\{\{|\}\}$/g, "");
+      return {
+        ...l,
+        label: l.label || LINK_LABELS[tokenName] || tokenName,
+        url: l.url || process.env[tokenName] || "",
+      };
+    });
 
-  const attachments = db.prepare(`SELECT name, url FROM attachments WHERE email_id = ?`).all(row.id);
-
-  return {
-    id: row.mail_no,
-    folder: row.folder.toLowerCase(),
-    senderName: row.sender_name,
-    senderEmail: row.sender_email,
-    recipient: row.recipient_name,
-    recipientEmail: row.recipient_email,
-    cc,
-    subject: row.subject,
-    body: row.body,
-    date: row.sent_at,
-    isStarred: Boolean(row.is_starred),
-    isRead: Boolean(row.is_read),
-    links: linksFor(row.body),
-    attachments: attachments.map((a) => ({ name: a.name, url: a.url || "" })),
-  };
+    return {
+      ...email,
+      folder: (email.folder || "inbox").toLowerCase(),
+      links,
+      attachments: email.attachments || [],
+    };
+  });
 }
 
 // Authentication middleware
@@ -68,7 +58,6 @@ function authMiddleware(req, res, next) {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    // Verify user still exists in database
     const user = db.prepare("SELECT id, username, display_name, role FROM users WHERE id = ?").get(decoded.id);
     if (!user) {
       return res.status(401).json({ error: "User no longer exists" });
@@ -141,33 +130,27 @@ app.get("/api/auth/me", authMiddleware, (req, res) => {
 
 // --- Emails Routes ---
 
-// All emails for protagonist Navya Mulay, newest first. Optional: /api/emails?folder=inbox
-app.get("/api/emails", authMiddleware, (req, res, next) => {
+// Returns protagonist Navya Mulay's emails from emails.js (optionally filtered by ?folder=...)
+app.get("/api/emails", authMiddleware, async (req, res, next) => {
   try {
-    let rows;
+    const list = await getEmails();
     if (req.query.folder) {
-      rows = db
-        .prepare("SELECT * FROM emails WHERE LOWER(folder) = LOWER(?) ORDER BY sent_at DESC")
-        .all(req.query.folder);
-    } else {
-      rows = db.prepare("SELECT * FROM emails ORDER BY sent_at DESC").all();
+      const folder = req.query.folder.toLowerCase();
+      return res.json(list.filter((e) => e.folder === folder));
     }
-    res.json(rows.map(toEmail));
+    res.json(list);
   } catch (err) {
     next(err);
   }
 });
 
 // One email by its number, e.g. /api/emails/1
-app.get("/api/emails/:id", authMiddleware, (req, res, next) => {
+app.get("/api/emails/:id", authMiddleware, async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid email id" });
-
-    const row = db.prepare("SELECT * FROM emails WHERE mail_no = ?").get(id);
-    if (!row) return res.status(404).json({ error: "Email not found" });
-
-    res.json(toEmail(row));
+    const list = await getEmails();
+    const found = list.find((e) => String(e.id) === String(req.params.id));
+    if (!found) return res.status(404).json({ error: "Email not found" });
+    res.json(found);
   } catch (err) {
     next(err);
   }
@@ -178,12 +161,11 @@ app.get("/api/emails/:id", authMiddleware, (req, res, next) => {
 const MODULE_NAMES = ["Git", "MIRROR", "Notes", "OSINT"];
 
 // Get hints summary for the logged-in player
-// Note: Locked hints NEVER include hint content, so client inspection cannot leak them!
+// Note: Locked hints NEVER include hint content, preventing client-side inspection.
 app.get("/api/hints", authMiddleware, (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // Fetch all hints unlocked by this user
     const userUnlocks = db.prepare(`
       SELECT hu.module, hu.hint_number, hu.unlocked_at, h.content
       FROM hint_unlocks hu
@@ -219,7 +201,7 @@ app.get("/api/hints", authMiddleware, (req, res, next) => {
   }
 });
 
-// Unlock the next hint for a given module
+// Unlock next hint for module
 app.post("/api/hints/unlock", authMiddleware, (req, res, next) => {
   try {
     const { module: requestedModule } = req.body;
@@ -234,7 +216,7 @@ app.post("/api/hints/unlock", authMiddleware, (req, res, next) => {
 
     const userId = req.user.id;
 
-    // 1. Enforce max hint limit per user
+    // 1. Enforce max hint limit
     const totalUnlockedCount = db.prepare("SELECT COUNT(*) AS count FROM hint_unlocks WHERE user_id = ?").get(userId).count;
     if (totalUnlockedCount >= MAX_HINTS_PER_USER) {
       return res.status(400).json({
@@ -302,7 +284,7 @@ app.get("/api/admin/users", authMiddleware, adminMiddleware, (req, res, next) =>
   }
 });
 
-// Create a new user account (e.g. for player team)
+// Create new user account
 app.post("/api/admin/users", authMiddleware, adminMiddleware, (req, res, next) => {
   try {
     const { username, password, displayName, role } = req.body;

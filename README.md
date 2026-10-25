@@ -18,31 +18,47 @@ Key Mechanics:
 
 ## 2. Quick Start
 
-### A. Start Backend Server
+### A. Run with Docker Compose (Recommended for Production / Deployment)
+```bash
+docker compose up -d
+```
+- Open `http://your-server-ip` (or `http://localhost`) in your browser.
+- Port 80 serves the React frontend and automatically proxies `/api` requests to the backend server.
+- The SQLite database is mounted in `./database` and persists across restarts.
+- To use a custom port (e.g. port 8080):
+  ```bash
+  PORT=8080 docker compose up -d
+  ```
+
+---
+
+### B. Local Development (Without Docker)
+
+#### 1. Start Backend Server
 ```bash
 cd server
 npm install
 npm start
 ```
-The server will start on `http://localhost:5001`. On first launch, it automatically initializes the database schema and seeds initial users, hints, and emails.
+Starts on `http://localhost:5001`.
 
-### B. Start Frontend Client
+#### 2. Start Frontend Client
 ```bash
 cd client
 npm install
 npm run dev
 ```
-Open `http://localhost:5173` in your browser.
+Starts on `http://localhost:5173`.
 
 ---
 
-## 3. Default Login Credentials
+## 3. Initial Admin Credentials
 
 | Role | Username | Password | Notes |
 |------|----------|----------|-------|
-| **Admin (Game Master)** | `admin` | `admin123` | Has access to Admin Panel (`/admin`) and user creation |
-| **Player (Investigator)** | `player1` | `player123` | Default investigative team account |
-| **Player (Investigator)** | `investigator` | `investigator123` | Secondary test team account |
+| **Admin (Game Master)** | `admin` | `admin123` | Access to Admin Panel (`/admin`) to register player teams |
+
+> Player/team accounts are created by the Game Master via the Admin Panel at `/admin`.
 
 ---
 
@@ -51,7 +67,7 @@ Open `http://localhost:5173` in your browser.
 ### A. Authentication & Investigation Perspective
 - JWT-based authentication.
 - Players sign in with credentials assigned by the Game Master.
-- Upon login, players view protagonist **Navya Mulay's** (`navya.mulay@campus.example`) inbox, sent messages, drafts, and trash.
+- Upon login, players view protagonist **Navya Mulay's** (`navya.mulay@bits-pilani.in`) inbox, sent messages, drafts, and trash.
 - Navbar clearly displays both the investigation subject (Navya Mulay) and the active investigator identity.
 
 ### B. Secure Hints System

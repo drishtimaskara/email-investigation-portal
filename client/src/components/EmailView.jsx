@@ -13,23 +13,55 @@ const initialsOf = (name) =>
 
 const person = (p) => (p.email ? `${p.name} <${p.email}>` : p.name)
 
-// Shows the body as written, turning each {{TOKEN}} into a link once its real url is filled in.
+// Shows the body as written, turning each {{TOKEN}} or raw URL into a link.
 function Body({ email }) {
-  const parts = email.body.split(/(\{\{[A-Z_]+\}\})/g)
+  const parts = (email.body || '').split(/(\{\{[A-Z0-9_]+\}\}|https?:\/\/[^\s<]+)/g)
+  const links = email.links || []
+
   return (
     <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
       {parts.map((part, i) => {
-        const link = email.links.find((l) => l.token === part)
-        if (!link) return part
-        return link.url ? (
-          <a key={i} href={link.url} target="_blank" rel="noreferrer" className="text-brand-600 underline">
-            {link.url}
-          </a>
-        ) : (
-          <span key={i} className="text-brand-600 underline decoration-dotted" title="This link is not available yet">
-            {part}
-          </span>
-        )
+        if (/^https?:\/\//i.test(part)) {
+          return (
+            <a
+              key={i}
+              href={part}
+              target="_blank"
+              rel="noreferrer"
+              className="text-brand-600 underline hover:text-brand-800"
+            >
+              {part}
+            </a>
+          )
+        }
+
+        if (/^\{\{[A-Z0-9_]+\}\}$/.test(part)) {
+          const link = links.find((l) => l.token === part)
+          if (link && link.url) {
+            return (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-brand-600 underline hover:text-brand-800"
+              >
+                {link.url}
+              </a>
+            )
+          }
+          return (
+            <span
+              key={i}
+              className="text-brand-600 underline decoration-dotted"
+              title="This link is not available yet"
+            >
+              {part}
+            </span>
+          )
+        }
+
+        return part
       })}
     </div>
   )

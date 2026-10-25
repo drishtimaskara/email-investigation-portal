@@ -83,7 +83,7 @@ export default function Login() {
               autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. team1 or admin"
+              placeholder="Username"
               className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
               required
             />
@@ -97,7 +97,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Password"
               className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
               required
             />
@@ -111,15 +111,6 @@ export default function Login() {
             {loading ? 'Authenticating…' : 'Sign In to Investigation Mailbox'}
           </button>
         </form>
-
-        {/* Credentials reminder for the ARG players / organizers */}
-        <div className="mt-6 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
-          <p className="font-medium text-slate-600">Default Accounts:</p>
-          <div className="mt-1 inline-flex flex-col gap-0.5 text-[11px] text-slate-500">
-            <span>Admin: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">admin</code> / <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">admin123</code></span>
-            <span>Player: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">player1</code> / <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">player123</code></span>
-          </div>
-        </div>
       </div>
     </div>
   )

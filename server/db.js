@@ -35,7 +35,7 @@ function verifyPassword(password, stored) {
   }
 }
 
-// Initialize tables if they don't exist
+// Initialize tables: users, hints, and hint_unlocks
 function initSchema() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -65,33 +65,9 @@ function initSchema() {
       unlocked_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE (user_id, hint_id)
     );
-
-    CREATE TABLE IF NOT EXISTS emails (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      mail_no INTEGER UNIQUE NOT NULL,
-      folder TEXT NOT NULL,
-      sender_name TEXT NOT NULL,
-      sender_email TEXT NOT NULL,
-      recipient_name TEXT NOT NULL,
-      recipient_email TEXT NOT NULL,
-      cc TEXT NOT NULL DEFAULT '[]',
-      subject TEXT NOT NULL,
-      body TEXT NOT NULL,
-      sent_at TEXT NOT NULL,
-      is_starred INTEGER NOT NULL DEFAULT 0,
-      is_read INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS attachments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email_id INTEGER NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      url TEXT
-    );
   `);
 
-  // Seed default admin and initial player if users table is empty
+  // Seed default admin if users table is empty
   const userCount = db.prepare("SELECT COUNT(*) AS count FROM users").get().count;
   if (userCount === 0) {
     const insertUser = db.prepare(`
@@ -100,12 +76,9 @@ function initSchema() {
     `);
 
     insertUser.run("admin", hashPassword("admin123"), "Game Master", "admin");
-    insertUser.run("player1", hashPassword("player123"), "Investigator Group 1", "player");
-    insertUser.run("investigator", hashPassword("investigator123"), "Lead Investigator", "player");
-    console.log("Seeded initial users: admin, player1, investigator");
   }
 
-  // Seed hints if hints table is empty
+  // Seed hints catalogue if empty
   const hintCount = db.prepare("SELECT COUNT(*) AS count FROM hints").get().count;
   if (hintCount === 0) {
     const HINTS_SEED = [
@@ -131,64 +104,13 @@ function initSchema() {
       VALUES (?, ?, ?)
     `);
 
-    const seedHintsTransaction = db.transaction((hints) => {
+    const seedHintsTx = db.transaction((hints) => {
       for (const h of hints) {
         insertHint.run(h.module, h.number, h.content);
       }
     });
 
-    seedHintsTransaction(HINTS_SEED);
-    console.log(`Seeded ${HINTS_SEED.length} hints.`);
-  }
-
-  // Seed emails if emails table is empty
-  const emailCount = db.prepare("SELECT COUNT(*) AS count FROM emails").get().count;
-  if (emailCount === 0) {
-    const emailsFile = path.resolve(__dirname, "..", "client", "src", "data", "emails.js");
-    if (fs.existsSync(emailsFile)) {
-      try {
-        const emailsContent = fs.readFileSync(emailsFile, "utf8");
-        const emailsMatch = emailsContent.match(/export const emails = (\[[\s\S]*?\]);?\s*$/);
-        if (emailsMatch) {
-          const emails = JSON.parse(emailsMatch[1]);
-          const insertEmail = db.prepare(`
-            INSERT INTO emails (mail_no, folder, sender_name, sender_email, recipient_name, recipient_email, cc, subject, body, sent_at, is_starred, is_read)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-          const insertAttachment = db.prepare(`
-            INSERT INTO attachments (email_id, name, url)
-            VALUES (?, ?, ?)
-          `);
-
-          const seedEmailsTx = db.transaction((list) => {
-            for (const e of list) {
-              const res = insertEmail.run(
-                e.id,
-                e.folder.toLowerCase(),
-                e.senderName || "",
-                e.senderEmail || "",
-                e.recipient || "",
-                e.recipientEmail || "",
-                JSON.stringify(e.cc || []),
-                e.subject || "",
-                e.body || "",
-                e.date || "",
-                e.isStarred ? 1 : 0,
-                e.isRead ? 1 : 0
-              );
-              for (const a of e.attachments || []) {
-                insertAttachment.run(res.lastInsertRowid, a.name || a.filename || "file", a.url || "");
-              }
-            }
-          });
-
-          seedEmailsTx(emails);
-          console.log(`Seeded ${emails.length} emails from emails.js`);
-        }
-      } catch (err) {
-        console.error("Failed to seed emails from emails.js:", err.message);
-      }
-    }
+    seedHintsTx(HINTS_SEED);
   }
 }
 
