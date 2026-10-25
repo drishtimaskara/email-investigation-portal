@@ -1,67 +1,84 @@
-# email-investigation-portal
-Mailbox-style investigation portal built using the PERN stack (PostgreSQL, Express.js, React.js, and Node.js).
 # Email Investigation Portal
+
+Mailbox-style Alternate Reality Game (ARG) investigation portal built with Express.js, React, and an embedded SQLite database (zero-configuration, no external database server needed).
+
+---
 
 ## 1. Project Overview
 
-We are building an interactive, email-style investigation portal using the PERN stack.
+Players investigate the case of a missing person by exploring protagonist **Navya Mulay's** mailbox archive, documents, evidence, and clues.
 
-Players will investigate a fictional case by exploring emails, documents, evidence and hints. The website will act as a digital evidence repository that guides players through the investigation without revealing the final conclusion immediately.
+Key Mechanics:
+- **Protagonist Mailbox Access:** Players log into their assigned team/investigator accounts and explore Navya Mulay's email repository.
+- **Server-Side Hint Tracking:** Hints are held securely on the server and only unlocked progressive clues are returned upon request. No hint text is visible in client source code.
+- **Quota Enforcement:** Each team can unlock a maximum of 5 hints total.
+- **Admin Control Panel:** Game Masters can create accounts for participating teams, monitor real-time hint unlocks, and view investigation activity.
 
-## 2. Technology Stack
+---
 
-- **Frontend:** React
-- **Backend:** Node.js and Express.js
-- **Database:** PostgreSQL
-- **Version Control:** GitHub
+## 2. Quick Start
 
-## 3. Core Features
-
-### A. Authentication
-- Login using OTP received on phone number.
-- Associate each investigation group with its designated bits mail.
-- Track hint access for each group.
-
-### B. Email Repository
-- Inbox, Sent, Drafts and Trash sections.
-- Pre-written emails displayed in a mailbox-style interface.
-- Clicking an email opens its individual detail page.
-- Email content and evidence must remain consistent with the investigation case document.
-
-### C. Hints System
-- Hints are locked by default.
-- Players can open a hints menu and select an available hint.
-- Each hint has a separate detail page.
-- Track which group accesses each hint.
-- Limit each mail/group to a maximum of five hints, according to the agreed project rules.
-
-### D. Administration and Tracking
-- Record hint-access activity.
-- Enforce the hint limit on the backend.
-- Provide appropriate administrative access to relevant tracking information.
-
-## 4. Team Responsibilities
-
- YASHIKA :- Mailbox interface and folders 
-
- SHIVANI :- Email detail pages and evidence presentation
-
- LAKSHMI :-  Hints interface and hint detail pages
-
- Member 4 OTP verification on phone number
-
- KRISHNA :- PostgreSQL database and hint tracking
-
-## 5. Initial Project Structure
-
-The agreed structure will be:
-
-```text
-email-investigation-portal/
-├── client/       # React frontend
-├── server/       # Node.js and Express backend
-├── database/     # PostgreSQL schema and setup
-├── .gitignore
-├── .env.example
-└── README.md
+### A. Run with Docker Compose (Recommended for Production / Deployment)
+```bash
+docker compose up -d
 ```
+- Open `http://your-server-ip` (or `http://localhost`) in your browser.
+- Port 80 serves the React frontend and automatically proxies `/api` requests to the backend server.
+- The SQLite database is mounted in `./database` and persists across restarts.
+- To use a custom port (e.g. port 8080):
+  ```bash
+  PORT=8080 docker compose up -d
+  ```
+
+---
+
+### B. Local Development (Without Docker)
+
+#### 1. Start Backend Server
+```bash
+cd server
+npm install
+npm start
+```
+Starts on `http://localhost:5001`.
+
+#### 2. Start Frontend Client
+```bash
+cd client
+npm install
+npm run dev
+```
+Starts on `http://localhost:5173`.
+
+---
+
+## 3. Initial Admin Credentials
+
+| Role | Username | Password | Notes |
+|------|----------|----------|-------|
+| **Admin (Game Master)** | `admin` | `admin123` | Access to Admin Panel (`/admin`) to register player teams |
+
+> Player/team accounts are created by the Game Master via the Admin Panel at `/admin`.
+
+---
+
+## 4. Features
+
+### A. Authentication & Investigation Perspective
+- JWT-based authentication.
+- Players sign in with credentials assigned by the Game Master.
+- Upon login, players view protagonist **Navya Mulay's** (`navya.mulay@bits-pilani.in`) inbox, sent messages, drafts, and trash.
+- Navbar clearly displays both the investigation subject (Navya Mulay) and the active investigator identity.
+
+### B. Secure Hints System
+- Modules: `Git`, `MIRROR`, `Notes`, `OSINT`.
+- Hints are stored exclusively on the server (`database/investigation.db`).
+- Locked hints never leak content to the client bundle or network responses.
+- Teams click `+` on a module to unlock the next progressive hint.
+- Server validates quota (max 5 hints per team) and logs each unlock with a timestamp.
+
+### C. Admin Control Panel (`/admin`)
+- Accessible only to administrators (`admin` account).
+- **Team Management:** Add new user accounts with custom usernames, team display names, and passwords.
+- **Quota Monitoring:** View hint usage progress bars (`X / 5 hints used`) for each team.
+- **Real-time Audit Log:** Detailed log of which team unlocked which hint and when.

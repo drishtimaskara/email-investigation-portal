@@ -1,29 +1,42 @@
 import { Link } from 'react-router-dom'
 import Icon from './Icons'
+import { useAuth } from '../auth/useAuth'
 import { currentUser } from '../data/emails'
 
-const initials = currentUser.name
+const initials = (currentUser.name || 'NM')
   .split(' ')
-  .map((part) => part[0])
+  .map((p) => p[0])
   .join('')
 
 export default function Navbar({ query, onQueryChange, onToggleSidebar }) {
+  const { user, logout } = useAuth()
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-3">
-      <button type="button" className="icon-btn" onClick={onToggleSidebar} aria-label="Toggle side panel">
+      <button
+        type="button"
+        className="icon-btn"
+        onClick={onToggleSidebar}
+        aria-label="Toggle side panel"
+      >
         <Icon name="menu" />
       </button>
 
-      <Link to="/inbox" className="flex items-center gap-2 pr-4">
+      <Link to="/inbox" className="flex items-center gap-2 pr-3">
         <span className="grid size-8 place-items-center rounded-lg bg-brand-600 text-white">
           <Icon name="mail" className="size-[18px]" />
         </span>
-        <span className="text-[15px] font-semibold tracking-tight text-slate-900">Mailbox</span>
+        <span className="text-[15px] font-semibold tracking-tight text-slate-900 hidden sm:inline">
+          Mailbox
+        </span>
       </Link>
 
       <label className="relative mx-auto block w-full max-w-xl">
         <span className="sr-only">Search mail</span>
-        <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-slate-400" />
+        <Icon
+          name="search"
+          className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-slate-400"
+        />
         <input
           type="search"
           value={query}
@@ -35,27 +48,60 @@ export default function Navbar({ query, onQueryChange, onToggleSidebar }) {
 
       <Link
         to="/hints"
-        className="flex h-9 items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 text-[12px] font-medium text-brand-700 transition-colors hover:bg-brand-100"
+        className="flex h-9 items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 text-[12px] font-medium text-brand-700 transition-colors hover:bg-brand-100 whitespace-nowrap"
       >
         <Icon name="bulb" className="size-3.5" />
         Hints &amp; Insights
       </Link>
 
-      <button type="button" className="icon-btn" aria-label="Help">
-        <Icon name="help" />
-      </button>
-      <button type="button" className="icon-btn" aria-label="Settings">
-        <Icon name="settings" />
-      </button>
+      {user?.role === 'admin' && (
+        <Link
+          to="/admin"
+          className="flex h-9 items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 text-[12px] font-medium text-purple-700 transition-colors hover:bg-purple-100 whitespace-nowrap"
+        >
+          Admin Panel
+        </Link>
+      )}
 
-      <div className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3">
-        <span className="grid size-8 place-items-center rounded-full bg-rose-700 text-xs font-semibold text-white" aria-hidden="true">
+      {/* Protagonist Mailbox Badge */}
+      <div
+        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 py-1 px-2.5"
+        title="Active Investigation Target: Protagonist Navya Mulay"
+      >
+        <span
+          className="grid size-7 place-items-center rounded-full bg-rose-700 text-[11px] font-semibold text-white"
+          aria-hidden="true"
+        >
           {initials}
         </span>
-        <div className="leading-tight">
-          <p className="text-[13px] font-medium text-slate-900">{currentUser.name}</p>
-          <p className="text-[11px] text-slate-500">{currentUser.email}</p>
+        <div className="leading-tight text-left hidden md:block">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[12px] font-semibold text-slate-900">{currentUser.name}</p>
+            <span className="rounded bg-rose-100 px-1 py-0.2 text-[9px] font-medium text-rose-800">
+              Subject
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-500">{currentUser.email}</p>
         </div>
+      </div>
+
+      {/* Current Logged-in Investigator / Admin */}
+      <div className="flex items-center gap-2 border-l border-slate-200 pl-2">
+        <div className="text-right text-[11px] leading-tight hidden lg:block">
+          <p className="font-semibold text-slate-800">
+            {user?.displayName || user?.username}
+          </p>
+          <p className="text-slate-400 capitalize">{user?.role || 'player'}</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={logout}
+          title="Sign out of investigation portal"
+          className="flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+        >
+          Exit
+        </button>
       </div>
     </header>
   )

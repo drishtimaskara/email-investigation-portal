@@ -1,4 +1,7 @@
 database/mailbox/
+database/*.db
+database/*.db-shm
+database/*.db-wal
 server/.env
 server/files/
 node_modules/
